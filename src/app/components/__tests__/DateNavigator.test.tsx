@@ -1,6 +1,9 @@
 import React from "react";
 import { render, fireEvent } from "@testing-library/react";
 import { DateNavigator } from "../DateNavigator";
+import { describe, it, expect } from "@jest/globals";
+import "@testing-library/jest-dom";
+/// <reference types="@testing-library/jest-dom" />
 
 describe("DateNavigator", () => {
   it("renders correctly", () => {

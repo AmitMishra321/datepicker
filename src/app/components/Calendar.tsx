@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   format,
   addDays,
@@ -11,41 +11,40 @@ import {
   isSameMonth,
   isSameDay,
   addMonths,
-  setDate,
-  getDay,
   eachDayOfInterval,
   addWeeks,
   addYears,
   startOfMonth as startOfMonthFn,
-  endOfMonth as endOfMonthFn,
-  parse,
+  parseISO,
+  startOfDay,
 } from "date-fns";
-import { useTaskContext } from "../context/TaskContext";
-import { HexColorPicker } from "react-colorful";
 import { TaskCard } from "./TaskCard";
-
-interface Task {
-  id: string;
-  title: string;
-  date: Date;
-  time: string;
-  color: string;
-  recurrence?: {
-    type: "daily" | "weekly" | "monthly" | "yearly";
-    interval: number;
-    daysOfWeek?: number[];
-    nthDay?: number;
-  };
-}
+import { TaskForm } from "./TaskForm";
+import { DateNavigator } from "./DateNavigator";
+import { useTaskContext } from "../context/TaskContext";
 
 const Calendar: React.FC = () => {
-  const { tasks, addTask } = useTaskContext();
+  const { tasks, addTask, isLoading } = useTaskContext();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [viewType, setViewType] = useState<
     "daily" | "weekly" | "monthly" | "yearly"
   >("monthly");
+
+  useEffect(() => {
+    console.log("Current tasks in Calendar:", tasks);
+    console.log("Is loading:", isLoading);
+  }, [tasks, isLoading]);
+
+  if (isLoading) {
+    return <div>Loading tasks...</div>;
+  }
+
+  const handleDateClick = (date: Date) => {
+    setSelectedDate(date);
+    setIsFormOpen(true);
+  };
 
   const renderCalendar = () => {
     switch (viewType) {
@@ -58,11 +57,6 @@ const Calendar: React.FC = () => {
       case "yearly":
         return renderYearlyView();
     }
-  };
-
-  const handleDateClick = (date: Date) => {
-    setSelectedDate(date);
-    setIsFormOpen(true);
   };
 
   const renderDailyView = () => {
@@ -166,7 +160,7 @@ const Calendar: React.FC = () => {
             <h4 className="text-sm font-bold mb-2">{format(month, "MMMM")}</h4>
             {tasks
               .filter((task) => {
-                const taskDate = new Date(task.date);
+                const taskDate = parseISO(task.date);
                 return (
                   taskDate.getMonth() === month.getMonth() &&
                   taskDate.getFullYear() === month.getFullYear()
@@ -182,9 +176,11 @@ const Calendar: React.FC = () => {
   };
 
   const renderTasks = (day: Date) => {
-    const dayTasks = tasks.filter((task) =>
-      isSameDay(new Date(task.date), day)
-    );
+    const dayStart = startOfDay(day);
+    const dayTasks = tasks.filter((task) => {
+      const taskDate = startOfDay(parseISO(task.date));
+      return isSameDay(taskDate, dayStart);
+    });
     return dayTasks.map((task) => (
       <TaskCard
         key={task.id}
@@ -192,132 +188,6 @@ const Calendar: React.FC = () => {
         isYearlyView={viewType === "yearly"}
       />
     ));
-  };
-
-  const TaskForm: React.FC<{ selectedDate: Date; onClose: () => void }> = ({
-    selectedDate,
-    onClose,
-  }) => {
-    const [title, setTitle] = useState("");
-    const [date, setDate] = useState(format(selectedDate, "yyyy-MM-dd"));
-    const [time, setTime] = useState("");
-    const [color, setColor] = useState("#3B82F6");
-    const [showColorPicker, setShowColorPicker] = useState(false);
-
-    const handleSubmit = (e: React.FormEvent) => {
-      e.preventDefault();
-      const taskDate = parse(date, "yyyy-MM-dd", new Date());
-      addTask({
-        id: Date.now().toString(),
-        title,
-        date: taskDate,
-        time,
-        color,
-        recurrence: {
-          type: "daily",
-          interval: 1,
-        },
-      });
-      onClose();
-    };
-
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white p-8 rounded-xl max-w-md w-full shadow-2xl transform transition-all duration-300 ease-in-out">
-          <h2 className="text-3xl font-bold mb-6 text-gray-800 border-b pb-2">
-            New Task
-          </h2>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label
-                htmlFor="title"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
-                Task Title
-              </label>
-              <input
-                id="title"
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Enter task title"
-                required
-                className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 transition-all duration-200"
-              />
-            </div>
-            {viewType === "yearly" && (
-              <div>
-                <label
-                  htmlFor="date"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  Date
-                </label>
-                <input
-                  id="date"
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 transition-all duration-200"
-                />
-              </div>
-            )}
-            <div>
-              <label
-                htmlFor="time"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
-                Time
-              </label>
-              <input
-                id="time"
-                type="time"
-                value={time}
-                onChange={(e) => setTime(e.target.value)}
-                required
-                className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 transition-all duration-200"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Color
-              </label>
-              <div className="flex items-center space-x-2">
-                <button
-                  type="button"
-                  onClick={() => setShowColorPicker(!showColorPicker)}
-                  className="p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200"
-                  style={{ backgroundColor: color }}
-                >
-                  <span className="sr-only">Choose color</span>
-                </button>
-                <span className="text-sm text-gray-500">{color}</span>
-              </div>
-              {showColorPicker && (
-                <div className="absolute z-10 mt-2">
-                  <HexColorPicker color={color} onChange={setColor} />
-                </div>
-              )}
-            </div>
-            <div className="flex justify-end space-x-3 mt-8">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
-              >
-                Add Task
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    );
   };
 
   const handlePrevious = () => {
@@ -356,28 +226,19 @@ const Calendar: React.FC = () => {
 
   return (
     <div className="container mx-auto p-4 font-sans bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg shadow-lg">
-      <div className="flex justify-between items-center mb-6">
-        <button
-          onClick={handlePrevious}
-          className="p-2 bg-white rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors shadow-md"
-        >
-          ← Prev
-        </button>
-        <h2 className="text-3xl font-bold text-gray-800">
-          {format(currentDate, viewType === "yearly" ? "yyyy" : "MMMM yyyy")}
-        </h2>
-        <button
-          onClick={handleNext}
-          className="p-2 bg-white rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors shadow-md"
-        >
-          Next →
-        </button>
-      </div>
+      <DateNavigator
+        currentDate={currentDate}
+        viewType={viewType}
+        onPrevious={handlePrevious}
+        onNext={handleNext}
+      />
       {renderCalendar()}
       {isFormOpen && selectedDate && (
         <TaskForm
           selectedDate={selectedDate}
           onClose={() => setIsFormOpen(false)}
+          onAddTask={addTask}
+          viewType={viewType}
         />
       )}
       <div className="mt-6 flex justify-center space-x-4">

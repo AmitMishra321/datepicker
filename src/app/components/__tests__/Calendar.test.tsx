@@ -1,15 +1,40 @@
 import React from "react";
-import { render, fireEvent } from "@testing-library/react";
+import "@testing-library/jest-dom";
+import { render, fireEvent, waitFor } from "@testing-library/react";
 import Calendar from "../Calendar";
-import { TaskProvider } from "../../context/TaskContext";
+import { useTaskContext } from "../../context/TaskContext";
+import { describe, it, expect, beforeEach, jest } from "@jest/globals";
+
+// Mock the useTaskContext hook
+jest.mock("../../context/TaskContext", () => ({
+  useTaskContext: jest.fn(),
+}));
+
+// Mock the localStorage
+const mockLocalStorage = {
+  getItem: jest.fn(),
+  setItem: jest.fn(),
+};
+Object.defineProperty(window, "localStorage", { value: mockLocalStorage });
 
 describe("Calendar", () => {
-  it("renders correctly and allows view type changes", () => {
-    const { getByText } = render(
-      <TaskProvider>
-        <Calendar />
-      </TaskProvider>
-    );
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockLocalStorage.getItem.mockReturnValue(null);
+
+    // Set up the mock return value for useTaskContext
+    (useTaskContext as jest.Mock).mockReturnValue({
+      tasks: [],
+      addTask: jest.fn(),
+      isLoading: false,
+    });
+  });
+
+  it("renders correctly and allows view type changes", async () => {
+    const { getByText } = render(<Calendar />);
+
+    // Wait for the initial loading state to resolve
+    await waitFor(() => expect(getByText("Monthly")).toBeInTheDocument());
 
     // Check if the default view (monthly) is rendered
     expect(getByText("Monthly")).toHaveClass("bg-blue-500");

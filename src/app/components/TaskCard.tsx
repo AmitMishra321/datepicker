@@ -1,6 +1,6 @@
 import React from "react";
 import { Task } from "../types/Task";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 
 interface TaskCardProps {
   task: Task;
@@ -17,16 +17,16 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, isYearlyView }) => (
   >
     {isYearlyView ? (
       <>
-        <div className="font-semibold mb-1">
-          {format(new Date(task.date), "MMM d")} at {task.time}
+        <div className="font-semibold mb-1 ">
+          {format(parseISO(task.date), "MMM d")} at {task.time}
         </div>
         <span className="font-medium">{task.title}</span>
       </>
     ) : (
-      <>
+      <div className="flex justify-between">
         <span className="font-medium">{task.title}</span>
-        <span className="font-semibold mr-1">{task.time}</span>
-      </>
+        <span className="font-semibold mr-0 ml-auto">{task.time}</span>
+      </div>
     )}
   </div>
 );
