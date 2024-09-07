@@ -5,9 +5,6 @@ interface ViewTypeSelectorProps {
   onViewTypeChange: (type: "daily" | "weekly" | "monthly" | "yearly") => void;
 }
 
-/**
- * ViewTypeSelector component for selecting calendar view type
- */
 export const ViewTypeSelector: React.FC<ViewTypeSelectorProps> = ({
   viewType,
   onViewTypeChange,

@@ -8,9 +8,6 @@ interface DateNavigatorProps {
   onNext: () => void;
 }
 
-/**
- * DateNavigator component for navigating between dates
- */
 export const DateNavigator: React.FC<DateNavigatorProps> = ({
   currentDate,
   viewType,

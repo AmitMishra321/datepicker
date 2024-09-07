@@ -7,9 +7,6 @@ interface TaskCardProps {
   isYearlyView?: boolean;
 }
 
-/**
- * TaskCard component for displaying individual tasks
- */
 export const TaskCard: React.FC<TaskCardProps> = ({ task, isYearlyView }) => (
   <div
     className="text-xs p-2 mt-1 rounded-lg shadow-md transition-all duration-200 hover:shadow-lg hover:scale-105"
